@@ -1,4 +1,4 @@
-package com.example.roombasic;
+package com.example.words;
 
 import android.content.Context;
 
@@ -19,10 +19,10 @@ public abstract class WordDataBase extends RoomDatabase {
     static  synchronized WordDataBase getDataBase(Context context){
         if (INSTANCE == null){
             //context返回应用程序的根节点
-            INSTANCE = Room.databaseBuilder(context.getApplicationContext(),WordDataBase.class,"word")
+            INSTANCE = Room.databaseBuilder(context.getApplicationContext(),WordDataBase.class,"word_database")
 //                    .allowMainThreadQueries()//强制在主线程使用,一般不建议使用
 //                    .fallbackToDestructiveMigration()//破坏式的迁移（清空数据库重新创建一个新的）
-//                    .addMigrations(MIGRATION_3_4)
+                    .addMigrations(MIGRATION_4_5)
                     .build();
             //获取WordDataBase一个对象,需要用到databaseBuilder（）;静态函数获取  呼叫build()；来创建
 //        //该数据库不能在主线程使用
@@ -31,6 +31,9 @@ public abstract class WordDataBase extends RoomDatabase {
     }
     public abstract WordDao getWordDao();
     //若有多个Entities，则应该写多个Dao
+
+
+    //数据库的迁移
     static final Migration MIGRATION_2_3 = new Migration(2,3) {//添加数据库表的列
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {

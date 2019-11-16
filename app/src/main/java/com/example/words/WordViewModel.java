@@ -1,7 +1,6 @@
-package com.example.roombasic;
+package com.example.words;
 
 import android.app.Application;
-import android.os.AsyncTask;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -12,7 +11,6 @@ import java.util.List;
 public class WordViewModel extends AndroidViewModel {//AndroidViewModel带有参数
     //通过仓库类来获取和存储
     private WordRepository wordRepository;
-    private WordDao wordDao;
     public WordViewModel(@NonNull Application application) {
         super(application);
         wordRepository = new WordRepository(application);

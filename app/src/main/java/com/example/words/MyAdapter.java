@@ -1,4 +1,4 @@
-package com.example.roombasic;
+package com.example.words;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -11,22 +11,21 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.RecyclerViewAccessibilityDelegate;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
-    List<Word> allWords = new ArrayList<>();
+    private List<Word> allWords = new ArrayList<>();
     boolean useCardView;//判定是否使用卡片视图
     private WordViewModel wordViewModel;
 
-    public MyAdapter(boolean useCardView ,WordViewModel wordViewModel) {
+    MyAdapter(boolean useCardView ,WordViewModel wordViewModel) {
         this.useCardView = useCardView;
         this.wordViewModel = wordViewModel;
     }
 
-    public void setAllWords(List<Word> allWords) {
+    void setAllWords(List<Word> allWords) {
         this.allWords = allWords;
     }
 
@@ -41,27 +40,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
         }else{
             itemView = layoutInflater.inflate(R.layout.cell_normal2,parent,false);
         }
-
-        return new MyViewHolder(itemView);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull final MyViewHolder holder, int position) {//ViewHolder与recycle绑定时呼叫的
-        final Word word = allWords.get(position);
-        holder.textViewNumber.setText(String.valueOf(position+1));//position为item当前位置
-        holder.textViewEnglish.setText(word.getWord());
-        holder.textViewChinese.setText(word.getChineseMeaning());
-        holder.aSwitchChineseinvisible.setOnCheckedChangeListener(null);
-        //视图是可回收的，滚动的时候可能驱动监听，可能会出现意料之外的修改
-        if (word.isChinese_invisible()){
-            holder.textViewChinese.setVisibility(View.GONE);//View.GONE隐藏中文意义,且不占空间
-                                                            //View.INVISIBLE隐藏中文含义，但容器依然占据空间
-            holder.aSwitchChineseinvisible.setChecked(true);
-        }else{
-            holder.textViewChinese.setVisibility(View.VISIBLE);
-            holder.aSwitchChineseinvisible.setChecked(false);
-        }
-        holder.itemView.setOnClickListener(new View.OnClickListener() {//启动一个activity，将其带入浏览器
+        final MyViewHolder holder = new MyViewHolder(itemView);//holder来内部类，需要final修饰
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Uri uri = Uri.parse("https://m.youdao.com/dict?le=eng&q="+holder.textViewEnglish.getText());//包装网址
@@ -73,6 +53,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
         holder.aSwitchChineseinvisible.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                Word word = (Word) holder.itemView.getTag(R.id.word_for_view_holder);
                 if (isChecked){
                     holder.textViewChinese.setVisibility(View.GONE);
                     word.setChinese_invisible(true);
@@ -84,15 +65,35 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
                 }
             }
         });
+
+        return holder;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull final MyViewHolder holder,final int position) {//ViewHolder与recycle绑定时呼叫的
+        final Word word = allWords.get(position);
+        holder.itemView.setTag(R.id.word_for_view_holder,word);//通过Tag传递word数据
+        holder.textViewNumber.setText(String.valueOf(position+1));//position为item当前位置
+        holder.textViewEnglish.setText(word.getWord());
+        holder.textViewChinese.setText(word.getChineseMeaning());
+
+        if (word.isChinese_invisible()){
+            holder.textViewChinese.setVisibility(View.GONE);//View.GONE隐藏中文意义,且不占空间
+                                                            //View.INVISIBLE隐藏中文含义，但容器依然占据空间
+            holder.aSwitchChineseinvisible.setChecked(true);
+        }else{
+            holder.textViewChinese.setVisibility(View.VISIBLE);
+            holder.aSwitchChineseinvisible.setChecked(false);
+        }
     }
 
     @Override
     public int getItemCount() {//返回列表总的个数
         return allWords.size();
     }
+
+
     //适配器，相当于内容管理器
-
-
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView textViewNumber,textViewEnglish,textViewChinese;

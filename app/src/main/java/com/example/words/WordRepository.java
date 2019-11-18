@@ -15,7 +15,9 @@ public class WordRepository {
     LiveData<List<Word>> getAllWordsLive() {
         return allWordsLive;
     }
-
+    LiveData<List<Word>> findWordsWithPattern(String pattern){
+        return wordDao.findWordsWithPattern("%"+pattern+"%");//添加通配符,才算模糊匹配
+    }
     WordRepository( Context context) {
         WordDataBase wordDataBase = WordDataBase.getDataBase(context.getApplicationContext());
         wordDao = wordDataBase.getWordDao();

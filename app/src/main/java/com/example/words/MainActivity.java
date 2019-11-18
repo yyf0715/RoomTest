@@ -1,6 +1,7 @@
 package com.example.words;
 
 import android.os.Bundle;
+import android.view.Menu;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
@@ -29,4 +30,5 @@ public class MainActivity extends AppCompatActivity {
         controller.navigateUp();
         return super.onSupportNavigateUp();
     }
+
 }

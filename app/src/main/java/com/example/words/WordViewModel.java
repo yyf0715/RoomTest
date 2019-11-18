@@ -18,6 +18,9 @@ public class WordViewModel extends AndroidViewModel {//AndroidViewModel带有参
     public LiveData<List<Word>> getAllWordsLive() {
         return wordRepository.getAllWordsLive();
     }
+    public LiveData<List<Word>> findWordsWithPattern(String pattern){
+        return wordRepository.findWordsWithPattern(pattern);
+    }
     void insertWords(Word...words){
         wordRepository.insertWords(words);
     }
@@ -30,6 +33,7 @@ public class WordViewModel extends AndroidViewModel {//AndroidViewModel带有参
     void deleteAllWords(){
         wordRepository.deleteAllWords();
     }
+
 
 
 

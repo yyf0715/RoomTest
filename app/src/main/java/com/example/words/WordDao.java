@@ -26,7 +26,10 @@ public interface WordDao {
     void deleteAllWords();
 
     @Query("SELECT * FROM WORD ORDER BY ID DESC")//查询，返回所有的内容，降序，最新记录放在前边
+
 //    List<Word> getAllWords();
     LiveData<List<Word>> getAllWordsLive();
 //    LiveData可观察的  运行时，系统会自动将其放在子线程，所以不用自己设置AsnycTask
+    @Query("SELECT * FROM WORD WHERE english_word LIKE :pattern ORDER BY ID DESC")
+    LiveData<List<Word>> findWordsWithPattern(String pattern);
 }

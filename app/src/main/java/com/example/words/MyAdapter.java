@@ -10,23 +10,34 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
-    private List<Word> allWords = new ArrayList<>();
+//ListAdapter能够自己监控数据的不同
+public class MyAdapter extends ListAdapter<Word,MyAdapter.MyViewHolder> {//改为ListAdapter，还需要添加数据类型,父类中拥有Llst
     boolean useCardView;//判定是否使用卡片视图
     private WordViewModel wordViewModel;
 
     MyAdapter(boolean useCardView ,WordViewModel wordViewModel) {
+        super(new DiffUtil.ItemCallback<Word>() {//处理两个列表差异化的回调
+            @Override
+            public boolean areItemsTheSame(@NonNull Word oldItem, @NonNull Word newItem) {//先比较列表中的元素
+                return oldItem.getId() == newItem.getId();
+            }
+
+            @Override
+            public boolean areContentsTheSame(@NonNull Word oldItem, @NonNull Word newItem) {//再比较内容
+                return (oldItem.getWord().equals(newItem.getWord())&&
+                        oldItem.getChineseMeaning().equals(newItem.getChineseMeaning())&&
+                        oldItem.isChinese_invisible() == newItem.isChinese_invisible());
+            }
+        });
         this.useCardView = useCardView;
         this.wordViewModel = wordViewModel;
-    }
-
-    void setAllWords(List<Word> allWords) {
-        this.allWords = allWords;
     }
 
     @NonNull
@@ -71,7 +82,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
 
     @Override
     public void onBindViewHolder(@NonNull final MyViewHolder holder,final int position) {//ViewHolder与recycle绑定时呼叫的
-        final Word word = allWords.get(position);
+        final Word word = getItem(position);
         holder.itemView.setTag(R.id.word_for_view_holder,word);//通过Tag传递word数据
         holder.textViewNumber.setText(String.valueOf(position+1));//position为item当前位置
         holder.textViewEnglish.setText(word.getWord());
@@ -88,12 +99,13 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
     }
 
     @Override
-    public int getItemCount() {//返回列表总的个数
-        return allWords.size();
+    public void onViewAttachedToWindow(@NonNull MyViewHolder holder) {//有一些数据在屏幕外可能不会改变
+        //当ViewHolder出现在屏幕时，设置序列号
+
+        super.onViewAttachedToWindow(holder);
+        holder.textViewNumber.setText(String.valueOf(holder.getAdapterPosition()+1));
     }
-
-
-    //适配器，相当于内容管理器
+//适配器，相当于内容管理器
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView textViewNumber,textViewEnglish,textViewChinese;

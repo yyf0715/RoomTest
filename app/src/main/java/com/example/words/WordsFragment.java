@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.SearchView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -23,6 +24,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -63,7 +65,21 @@ public class WordsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(requireActivity()));
         myAdapter1 = new MyAdapter(false,wordViewModel);
         myAdapter2 = new MyAdapter(true,wordViewModel);
-
+        recyclerView.setItemAnimator(new DefaultItemAnimator(){//动画结束后刷新
+            @Override
+            public void onAnimationFinished(@NonNull RecyclerView.ViewHolder viewHolder) {
+                super.onAnimationFinished(viewHolder);
+                LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int firstPosition = linearLayoutManager.findFirstVisibleItemPosition();
+                int lastPosition = linearLayoutManager.findLastVisibleItemPosition();
+                for (int i= firstPosition;i<lastPosition;i++){
+                    MyAdapter.MyViewHolder holder = (MyAdapter.MyViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                    if (holder!=null){
+                        holder.textViewNumber.setText(String.valueOf(i+1));
+                    }
+                }
+            }
+        });
         SharedPreferences shp = requireActivity().getSharedPreferences(VIEW_TYPE_SHP,Context.MODE_PRIVATE);
         boolean viewType = shp.getBoolean(IS_USING_CARD_VIEW,false);
         if (viewType){
@@ -77,11 +93,10 @@ public class WordsFragment extends Fragment {
             @Override
             public void onChanged(List<Word> words) {
                 int temp = myAdapter1.getItemCount();
-                myAdapter1.setAllWords(words);
-                myAdapter2.setAllWords(words);
+
                 if (temp!=words.size()){//数据发生改变，通知适配器
-                    myAdapter1.notifyDataSetChanged();
-                    myAdapter2.notifyDataSetChanged();
+                    myAdapter1.submitList(words);
+                    myAdapter2.submitList(words);
                 }
             }
         });
@@ -166,11 +181,15 @@ public class WordsFragment extends Fragment {
                     @Override
                     public void onChanged(List<Word> words) {
                         int temp = myAdapter1.getItemCount();
-                        myAdapter1.setAllWords(words);
-                        myAdapter2.setAllWords(words);
+
                         if (temp!=words.size()){
-                            myAdapter1.notifyDataSetChanged();
-                            myAdapter2.notifyDataSetChanged();
+                            recyclerView.smoothScrollBy(0,-200);//往下滚动200dp
+//                            myAdapter1.notifyDataSetChanged();
+//                            myAdapter2.notifyDataSetChanged();
+//                            myAdapter1.notifyItemInserted(0);
+                            myAdapter1.submitList(words);
+                            myAdapter2.submitList(words);
+                            //提交的数据会在后台进行差异化比较，根据比对结果来刷新界面
                         }
                     }
                 });

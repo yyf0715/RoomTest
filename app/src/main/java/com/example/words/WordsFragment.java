@@ -25,10 +25,13 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
@@ -43,6 +46,9 @@ public class WordsFragment extends Fragment {
     private LiveData<List<Word>> filteredWords;//已经匹配的Words
     private static final String VIEW_TYPE_SHP = "view_type_shp";//
     private static final String IS_USING_CARD_VIEW = "is_using_card_view";
+    private List<Word> allWords;
+    private boolean undoAvtion = false;
+    private DividerItemDecoration dividerItemDecoration;//添加边界线
 
     public WordsFragment() {
         // Required empty public constructor
@@ -82,18 +88,19 @@ public class WordsFragment extends Fragment {
         });
         SharedPreferences shp = requireActivity().getSharedPreferences(VIEW_TYPE_SHP,Context.MODE_PRIVATE);
         boolean viewType = shp.getBoolean(IS_USING_CARD_VIEW,false);
+        dividerItemDecoration = new DividerItemDecoration(requireActivity(),DividerItemDecoration.VERTICAL);//添加边界线
         if (viewType){
-            recyclerView.setAdapter(myAdapter1);
-        }else{
             recyclerView.setAdapter(myAdapter2);
+        }else{
+            recyclerView.setAdapter(myAdapter1);
+            recyclerView.addItemDecoration(dividerItemDecoration);//添加边界线
         }
-        recyclerView.setAdapter(myAdapter1);
         filteredWords = wordViewModel.getAllWordsLive();//一开始 不过滤
-        filteredWords.observe(requireActivity(), new Observer<List<Word>>() {
+        filteredWords.observe(getViewLifecycleOwner(), new Observer<List<Word>>() {
             @Override
             public void onChanged(List<Word> words) {
                 int temp = myAdapter1.getItemCount();
-
+                    allWords = words;
                 if (temp!=words.size()){//数据发生改变，通知适配器
                     myAdapter1.submitList(words);
                     myAdapter2.submitList(words);
@@ -109,6 +116,30 @@ public class WordsFragment extends Fragment {
 
             }
         });
+        //滑动删除,需要借助工具ItemTouchHelper 辅助工具
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,ItemTouchHelper.START|ItemTouchHelper.END) {
+            //允许从左往右滑动，也支持从右往左滑动
+            @Override//拖动
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override//滑动
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                final Word wordDelete = allWords.get(viewHolder.getAdapterPosition());
+                wordViewModel.deleteWords(wordDelete);
+                //撤销
+                Snackbar.make(requireActivity().findViewById(R.id.wordsFragmentView),"删除了一个词汇",Snackbar.LENGTH_SHORT)
+                        .setAction("撤销", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                undoAvtion = true;
+                                wordViewModel.insertWords(wordDelete);
+                            }
+                        })//设置动作
+                        .show();
+            }
+        }).attachToRecyclerView(recyclerView);//生效
     }
 
     @Override
@@ -141,9 +172,11 @@ public class WordsFragment extends Fragment {
                 if (viewType){
                     recyclerView.setAdapter(myAdapter1);
                     editor.putBoolean(IS_USING_CARD_VIEW,false);
+                    recyclerView.addItemDecoration(dividerItemDecoration);
                 }else {
                     recyclerView.setAdapter(myAdapter2);
                     editor.putBoolean(IS_USING_CARD_VIEW,true);
+                    recyclerView.removeItemDecoration(dividerItemDecoration);
                 }
                 editor.apply();
 
@@ -175,15 +208,18 @@ public class WordsFragment extends Fragment {
             public boolean onQueryTextChange(String s) {//内容改变时 赛选结果
 //                Log.d("mylog", "onQueryTextChange: "+s);
                 String pattern = s.trim();
-                filteredWords.removeObservers(requireActivity()); ///...先移出观察，防止出现重复
+                filteredWords.removeObservers(getViewLifecycleOwner()); ///...先移出观察，防止出现重复
                 filteredWords = wordViewModel.findWordsWithPattern(pattern);
-                filteredWords.observe(requireActivity(), new Observer<List<Word>>() {
+                filteredWords.observe(getViewLifecycleOwner(), new Observer<List<Word>>() {
                     @Override
                     public void onChanged(List<Word> words) {
                         int temp = myAdapter1.getItemCount();
-
+                        allWords = words;
                         if (temp!=words.size()){
-                            recyclerView.smoothScrollBy(0,-200);//往下滚动200dp
+                            if (temp<words.size()&&undoAvtion){//小于表示插入  并且不是在撤销上
+                                recyclerView.smoothScrollBy(0,-200);//往下滚动200dp
+                            }
+                            undoAvtion = false;
 //                            myAdapter1.notifyDataSetChanged();
 //                            myAdapter2.notifyDataSetChanged();
 //                            myAdapter1.notifyItemInserted(0);
@@ -193,6 +229,9 @@ public class WordsFragment extends Fragment {
                         }
                     }
                 });
+
+
+
 
                 return true;//返回值true 这个事件不会再往下传递
             }
